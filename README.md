@@ -1,0 +1,45 @@
+# Remote SSH Version Cleaner
+
+Clean obsolete VS Code Stable server versions from Linux hosts connected through Remote SSH. Review exact paths and confirm removal using the **Clean Up VS Code** status-bar button.
+
+![Amar Micro Inc.](assets/icon.png)
+
+## Preview
+
+![Cleanup overview showing two installed server folders and two removable entries](assets/screenshot-before-redacted.png)
+
+Connection details have been removed from this image for privacy.
+
+## Install and use
+
+1. Connect VS Code to a Linux host using Remote SSH.
+2. Install **Remote SSH Version Cleaner** in that host’s Extensions section. For the 0.1.13 package (`remote-server-cleaner-0.1.13.vsix`), use **Extensions → … → Install from VSIX…** and select the package. Reload if requested.
+3. Click **Clean Up VS Code** in the bottom status bar.
+4. Inspect the installed servers and protection reasons. The removal total breaks down server folders, launcher files, and legacy folders; then click **Review cleanup**.
+5. Confirm the exact paths with **Delete obsolete entries**, or choose **Cancel**. After cleanup, the view shows removed paths and freshly scanned remaining installations.
+
+The button appears after startup only in Linux Remote SSH windows. If hidden, enable **View → Appearance → Status Bar**. Install the extension on each host you want to clean. A local Mac or Windows installation alone does not clean remote servers.
+
+No terminal commands or external runtimes are required for normal use. Cleanup operates only on the currently connected host and account; it does not enumerate SSH configurations or run automatically across hosts.
+
+## Cleanup policy
+
+Supports Linux Stable installations in `~/.vscode-server/cli/servers/Stable-<commit>`, associated `code-<commit>` files, and matching legacy `bin/<commit>` directories. Honors `VSCODE_AGENT_FOLDER` when set. Insiders and legacy-only layouts are not supported in this first version.
+
+Keeps every commit of the highest numeric release and server folders referenced by running processes owned by this user. Running launchers and legacy server folders are protected independently; an old launcher does not protect its matching server folder. Validates installation names, product metadata, directory ancestors, and LRU schema. Unknown launcher and legacy entries are marked REVIEW and preserved. Extensions, settings, logs, and persistent data are outside the deletion scope.
+
+Preview changes nothing. Apply requires confirmation, rescans the plan, and checks running commits again before each deletion. Existing `lru.json` gets a timestamped backup and atomic replacement retaining protected installed versions; an absent LRU stays absent. Removal is permanent; LRU backups do not restore deleted servers. If a later deletion fails, earlier deletions are not rolled back; refresh the cleanup view.
+
+Process detection uses Linux `/proc`. If owned process command lines cannot be inspected, cleanup stops. This is best effort: another client can start a server between the final process check and deletion. Avoid connecting other VS Code clients to the same account while applying cleanup. There is no lock shared with VS Code's installer.
+
+## Build from source
+
+The runtime JavaScript needs no compilation or third-party dependencies. Use `npm run package` to create the VSIX. Public release source uses the VS Code extension packaging tool and requires Node.js and npm for packaging. The resulting VSIX can be installed through VS Code’s Extensions panel.
+
+## Support
+
+Visit [Amar Micro Inc.](https://amar.com) and choose **Get in touch** to request support.
+
+## License
+
+MIT License. Copyright (c) 2026 Amar Micro Inc. See [LICENSE](LICENSE).
