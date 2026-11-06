@@ -2,6 +2,10 @@
 
 Clean obsolete VS Code Stable server versions from Linux hosts connected through Remote SSH. Review exact paths and confirm removal using the **Clean Up VS Code** status-bar button.
 
+## Why I built this
+
+My Linux servers kept running out of disk space, and old VS Code Remote server versions were part of the problem. I started cleaning them up by hand, then wrote a Bash script to automate it. This extension brings that workflow into VS Code: review what’s installed, see what can be removed, and confirm cleanup without opening a terminal.
+
 ![Amar Micro Inc.](assets/icon.png)
 
 ## Preview
@@ -13,7 +17,7 @@ Connection details have been removed from this image for privacy.
 ## Install and use
 
 1. Connect VS Code to a Linux host using Remote SSH.
-2. Install **Remote SSH Version Cleaner** in that host’s Extensions section. For the 0.1.13 package (`remote-server-cleaner-0.1.13.vsix`), use **Extensions → … → Install from VSIX…** and select the package. Reload if requested.
+2. Install **Remote SSH Version Cleaner** in that host’s Extensions section. For the 0.1.14 package (`remote-server-cleaner-0.1.14.vsix`), use **Extensions → … → Install from VSIX…** and select the package. Reload if requested.
 3. Click **Clean Up VS Code** in the bottom status bar.
 4. Inspect the installed servers and protection reasons. The removal total breaks down server folders, launcher files, and legacy folders; then click **Review cleanup**.
 5. Confirm the exact paths with **Delete obsolete entries**, or choose **Cancel**. After cleanup, the view shows removed paths and freshly scanned remaining installations.

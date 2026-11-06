@@ -2,7 +2,7 @@
   "name": "remote-server-cleaner",
   "displayName": "Remote SSH Version Cleaner",
   "description": "Preview and remove obsolete VS Code Stable server installations on connected Linux hosts.",
-  "version": "0.1.13",
+  "version": "0.1.14",
   "publisher": "amar-micro",
   "engines": {
     "vscode": "^1.85.0"
