@@ -21,7 +21,7 @@ My Linux servers kept running out of disk space, and old VS Code Remote server v
 ## Install and use
 
 1. Connect VS Code to a Linux host using Remote SSH.
-2. Install **Remote SSH Version Cleaner** in that host’s Extensions section. Choose the Marketplace extension published by **amar-micro**. For a downloaded release, use **Extensions → … → Install from VSIX…** and select `amar-micro-remote-server-cleaner-0.5.4.vsix`. Reload if requested.
+2. Install **Remote SSH Version Cleaner** in that host’s Extensions section. Choose the Marketplace extension published by **amar-micro**. For a downloaded release, use **Extensions → … → Install from VSIX…** and select `amar-micro-remote-server-cleaner-0.5.5.vsix`. Reload if requested.
 3. Click **Clean Up VS Code** in the bottom status bar.
 4. Inspect the installed servers and protection reasons. The removal total breaks down server folders, launcher files, and legacy folders; then click **Review cleanup**.
 5. Confirm the exact paths with **Delete obsolete entries**, or choose **Cancel**. After cleanup, the view shows removed paths and freshly scanned remaining installations.
@@ -34,7 +34,7 @@ No terminal commands or external runtimes are required for normal use. Cleanup o
 
 Supports Linux Stable installations in `~/.vscode-server/cli/servers/Stable-<commit>`, associated `code-<commit>` files, and matching legacy `bin/<commit>` directories. Honors `VSCODE_AGENT_FOLDER` when set. Insiders and legacy-only layouts are not supported in this first version.
 
-Keeps every commit of the highest numeric release and server folders referenced by running processes owned by this user. Running launchers and legacy server folders are protected independently; an old launcher does not protect its matching server folder. Validates installation names, product metadata, directory ancestors, and LRU schema. Malformed launcher names, launcher symlinks, and non-file launcher entries are marked REVIEW and preserved, as are legacy entries without a matching installed server. A regular `code-<40-character commit>` launcher is removable if it is neither for a newest installed server nor detected as running, including when its matching server is no longer installed. Extensions, settings, logs, and persistent data are outside the deletion scope.
+Keeps every commit of the highest numeric release and server folders referenced by running processes on this server owned by the current account. Running launchers and legacy server folders are protected independently; an old launcher does not protect its matching server folder. Validates installation names, product metadata, directory ancestors, and LRU schema. Malformed launcher names, launcher symlinks, and non-file launcher entries are marked REVIEW and preserved, as are legacy entries without a matching installed server. A regular `code-<40-character commit>` launcher is removable if it is neither for a newest installed server nor detected as running, including when its matching server is no longer installed. Extensions, settings, logs, and persistent data are outside the deletion scope.
 
 Preview changes nothing. Apply requires confirmation, rescans the plan, and checks running commits again before each deletion. Existing `lru.json` gets a timestamped backup and atomic replacement retaining protected installed versions; an absent LRU stays absent. Removal is permanent; LRU backups do not restore deleted servers. If a later deletion fails, earlier deletions are not rolled back; refresh the cleanup view.
 
