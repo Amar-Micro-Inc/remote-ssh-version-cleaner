@@ -2,7 +2,7 @@
   "name": "remote-server-cleaner",
   "displayName": "Remote SSH Version Cleaner",
   "description": "Preview and remove obsolete VS Code Stable server installations on connected Linux hosts.",
-  "version": "0.5.2",
+  "version": "0.5.4",
   "publisher": "amar-micro",
   "engines": {
     "vscode": "^1.85.0"
@@ -39,7 +39,7 @@
   "activationEvents": [
     "onStartupFinished"
   ],
-  "icon": "assets/icon.png",
+  "icon": "assets/cleaner-icon.png",
   "homepage": "https://amar.com",
   "repository": {
     "type": "git",
@@ -51,9 +51,8 @@
   "files": [
     "README.md",
     "LICENSE",
-    "assets/icon.png",
+    "assets/cleaner-icon.png",
     "assets/status-bar-button.png",
-    "assets/screenshot-before-redacted.png",
     "src/cleaner.js",
     "src/extension.js"
   ]

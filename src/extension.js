@@ -4,7 +4,7 @@ const os = require('node:os');
 const path = require('node:path');
 const { randomBytes } = require('node:crypto');
 const cleaner = require('./cleaner');
-const logo = 'data:image/png;base64,' + require('node:fs').readFileSync(path.join(__dirname, '..', 'assets', 'icon.png')).toString('base64');
+const appIcon = 'data:image/png;base64,' + require('node:fs').readFileSync(path.join(__dirname, '..', 'assets', 'cleaner-icon.png')).toString('base64');
 const escape = value => String(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
 function page(state, version) {
@@ -20,7 +20,7 @@ function page(state, version) {
   };
   return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src data:; style-src 'nonce-${nonce}'; script-src 'nonce-${nonce}';"><title>Remote SSH Version Cleaner</title><style nonce="${nonce}">
   body{font-family:var(--vscode-font-family);color:var(--vscode-editor-foreground);background:var(--vscode-editor-background);padding:24px;line-height:1.5}main{max-width:960px;margin:auto}h1{font-size:28px;margin:4px 0}h2{font-size:18px;margin:0}p{margin:8px 0}.muted,header{color:var(--vscode-descriptionForeground)}.brand{display:flex;align-items:center;gap:16px;flex-wrap:wrap}.brand img{width:88px;height:88px;object-fit:contain;flex:none}.brand h1{color:var(--vscode-editor-foreground)}.byline{font-size:13px;margin:0 0 8px}.eyebrow{font-size:12px;text-transform:uppercase;letter-spacing:1px}.summary{display:flex;flex-wrap:wrap;gap:12px;margin:24px 0}.metric{flex:1;min-width:140px;padding:16px;border:1px solid var(--vscode-panel-border);border-radius:6px}.metric strong{display:block;font-size:28px}.toolbar,.row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}button{font:inherit;cursor:pointer;background:var(--vscode-button-background);color:var(--vscode-button-foreground);border:1px solid transparent;border-radius:3px;padding:8px 16px}button:hover{background:var(--vscode-button-hoverBackground)}button.secondary{background:var(--vscode-button-secondaryBackground);color:var(--vscode-button-secondaryForeground)}button:disabled{opacity:.5;cursor:default}button:focus-visible{outline:2px solid var(--vscode-focusBorder);outline-offset:3px}section{margin-top:28px}article{padding:14px 0;border-bottom:1px solid var(--vscode-panel-border)}code{font-family:var(--vscode-editor-font-family);font-size:12px;overflow-wrap:anywhere}.badge{font-size:12px;border:1px solid var(--vscode-panel-border);border-radius:12px;padding:2px 10px}.keep{color:var(--vscode-testing-iconPassed)}.delete{color:var(--vscode-editorWarning-foreground)}.review{color:var(--vscode-editorInfo-foreground)}.notice{padding:16px;border-left:3px solid var(--vscode-focusBorder);background:var(--vscode-textBlockQuote-background);margin:20px 0}.error{border-color:var(--vscode-errorForeground)}.count{font-size:13px;color:var(--vscode-descriptionForeground)}ul{padding-left:20px}li{margin:8px 0}
-  </style></head><body><main><header><div class="eyebrow">Remote SSH Version Cleaner · extension ${escape(version)}</div><div class="brand"><img src="${logo}" alt="Amar Micro Inc." width="88" height="88"><div><h1>Clean Old VS Code Server Versions</h1><p class="byline">by Amar Micro Inc.</p></div></div><p>${escape(os.hostname())}</p><code>${escape(plan?.root || state.root)}</code></header>
+  </style></head><body><main><header><div class="eyebrow">Remote SSH Version Cleaner · extension ${escape(version)}</div><div class="brand"><img src="${appIcon}" alt="Remote SSH Version Cleaner" width="88" height="88"><div><h1>Clean Old VS Code Server Versions</h1><p class="byline">by Amar Micro Inc.</p></div></div><p>${escape(os.hostname())}</p><code>${escape(plan?.root || state.root)}</code></header>
   <div role="status" aria-live="polite">${state.busy ? `<div class="notice">${escape(state.busy)}</div>` : ''}${state.message ? `<div class="notice">${escape(state.message)}</div>` : ''}</div>
   ${state.error ? `<div class="notice error" role="alert"><strong>Cleanup needs attention</strong><p>${escape(state.error)}</p><p>Some entries may already have been removed if cleanup started. Refresh to inspect the current state.</p></div>` : ''}
   ${plan ? `<div class="summary"><div class="metric"><strong>${servers.length}</strong>Installed server folders</div><div class="metric"><strong>${escape(plan.newest.version)}</strong>Latest server version</div><div class="metric"><strong>${deletions.length}</strong>Total entries to remove<p class="muted">${escape(removalBreakdown)}</p></div></div>` : ''}
@@ -38,6 +38,16 @@ function activate(context) {
   button.command = 'remoteServerCleaner.clean';
   context.subscriptions.push(button);
   if (process.platform === 'linux' && vscode.env.remoteName === 'ssh-remote') button.show();
+  let statusRevision = 0;
+  const updateStatus = (plan, error) => {
+    const entries = plan?.items.filter(item => item.action === 'DELETE') || [];
+    button.color = entries.length ? new vscode.ThemeColor('editorWarning.foreground') : undefined;
+    button.tooltip = error ? 'Unable to check for obsolete entries. Click to inspect this host.' : plan
+      ? entries.length ? `Cleanup available: ${['server', 'launcher', 'legacy'].map(kind => `${entries.filter(item => item.kind === kind).length} ${kind === 'server' ? 'server folders' : kind === 'launcher' ? 'launcher files' : 'legacy folders'}`).join(' · ')}. Click to review.`
+        : 'No obsolete entries found. Click to inspect this host again.'
+      : 'Checking for obsolete VS Code server entries…';
+  };
+  context.subscriptions.push({ dispose: () => { statusRevision++; } });
   let panel;
   let state;
   context.subscriptions.push({ dispose: () => panel?.dispose() });
@@ -47,6 +57,7 @@ function activate(context) {
     state.plan = null;
     const plan = await cleaner.scan(root, await cleaner.activeCommits());
     state.plan = plan;
+    updateStatus(plan);
     state.scanned = new Date().toLocaleTimeString();
   };
   const run = async action => {
@@ -55,6 +66,8 @@ function activate(context) {
     if (action === 'cancel') { state.confirm = false; render(); return; }
     if (!['refresh','confirm'].includes(action)) return;
     if (action === 'confirm' && (!state.confirm || !state.plan)) return;
+    statusRevision++;
+    updateStatus();
     const applying = action === 'confirm';
     state.confirm = false;
     state.error = null;
@@ -76,12 +89,14 @@ function activate(context) {
     } catch (e) {
       state.plan = null;
       state.error = e.message;
+      updateStatus(null, e);
     } finally { state.busy = null; render(); }
   };
   const open = async () => {
     if (panel) { panel.reveal(); return; }
     if (!state) state = { root, busy: null, plan: null };
     panel = vscode.window.createWebviewPanel('remoteServerCleaner', 'Remote SSH Version Cleaner', vscode.ViewColumn.One, { enableScripts: true, localResourceRoots: [], retainContextWhenHidden: true });
+    panel.iconPath = vscode.Uri.file(path.join(__dirname, '..', 'assets', 'cleaner-icon.png'));
     // Keep an in-flight operation attached to its state even if the view is closed.
     const openedPanel = panel;
     const messageListener = openedPanel.webview.onDidReceiveMessage(message => {
@@ -95,6 +110,18 @@ function activate(context) {
     render();
     if (!state.busy) await run('refresh');
   };
+  if (process.platform === 'linux' && vscode.env.remoteName === 'ssh-remote') {
+    const revision = ++statusRevision;
+    updateStatus();
+    void (async () => {
+      try {
+        const plan = await cleaner.scan(root, await cleaner.activeCommits());
+        if (revision === statusRevision) updateStatus(plan);
+      } catch (error) {
+        if (revision === statusRevision) updateStatus(null, error);
+      }
+    })();
+  }
   for (const command of ['clean','preview']) context.subscriptions.push(vscode.commands.registerCommand(`remoteServerCleaner.${command}`, open));
 }
 module.exports = { activate, page };
