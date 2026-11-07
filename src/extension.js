@@ -40,6 +40,7 @@ function activate(context) {
   if (process.platform === 'linux' && vscode.env.remoteName === 'ssh-remote') button.show();
   let panel;
   let state;
+  context.subscriptions.push({ dispose: () => panel?.dispose() });
   const root = process.env.VSCODE_AGENT_FOLDER || path.join(os.homedir(), '.vscode-server');
   const render = () => { if (panel) panel.webview.html = page(state, context.extension.packageJSON.version); };
   const scan = async () => {
@@ -82,10 +83,15 @@ function activate(context) {
     if (!state) state = { root, busy: null, plan: null };
     panel = vscode.window.createWebviewPanel('remoteServerCleaner', 'Remote SSH Version Cleaner', vscode.ViewColumn.One, { enableScripts: true, localResourceRoots: [], retainContextWhenHidden: true });
     // Keep an in-flight operation attached to its state even if the view is closed.
-    panel.onDidDispose(() => { panel = undefined; }, null, context.subscriptions);
-    context.subscriptions.push(panel, panel.webview.onDidReceiveMessage(message => {
+    const openedPanel = panel;
+    const messageListener = openedPanel.webview.onDidReceiveMessage(message => {
       if (message && typeof message.action === 'string') void run(message.action);
-    }));
+    });
+    const closeListener = openedPanel.onDidDispose(() => {
+      messageListener.dispose();
+      closeListener.dispose();
+      if (panel === openedPanel) panel = undefined;
+    });
     render();
     if (!state.busy) await run('refresh');
   };

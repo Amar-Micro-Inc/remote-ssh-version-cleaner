@@ -54,7 +54,7 @@ async function scan(root, active = new Set()) {
   for(const name of await fs.readdir(root)) {
     if(!name.startsWith('code-')) continue;
     const p=path.join(root,name), s=await stat(p), commit=name.slice(5);
-    items.push({path:p,kind:'launcher',reason:newestCommits.has(commit)?'newest launcher':active.has(`launcher:${commit}`)?'launcher running (does not protect matching server folder)':'obsolete or unrecognized launcher',action:!new RegExp(`^${SHA}$`).test(commit)||!s?.isFile()||s.isSymbolicLink()?'REVIEW':newestCommits.has(commit)||active.has(`launcher:${commit}`)?'KEEP':'DELETE'});
+    items.push({path:p,kind:'launcher',reason:newestCommits.has(commit)?'newest launcher':active.has(`launcher:${commit}`)?'launcher running (does not protect matching server folder)':'obsolete launcher (not newest or running)',action:!new RegExp(`^${SHA}$`).test(commit)||!s?.isFile()||s.isSymbolicLink()?'REVIEW':newestCommits.has(commit)||active.has(`launcher:${commit}`)?'KEEP':'DELETE'});
   }
   const bin=path.join(root,'bin');
   if(await stat(bin)) {

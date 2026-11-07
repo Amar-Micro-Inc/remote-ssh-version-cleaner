@@ -6,7 +6,7 @@ Clean obsolete VS Code Stable server versions from Linux hosts connected through
 
 After installation, connect to a Linux host using **Remote SSH**. A **Clean Up VS Code** button appears in the bottom-left status bar. Click it to review old server versions before confirming removal.
 
-<img src="assets/status-bar-button.png" alt="Close-up of the Clean Up VS Code status-bar button" width="360">
+<img src="assets/status-bar-button.png" alt="Bottom-left VS Code status bar showing the SSH connection indicator and Clean Up VS Code button" width="760">
 
 If the status bar is hidden, enable **View → Appearance → Status Bar**. The button appears only in Linux Remote SSH windows.
 
@@ -25,7 +25,7 @@ Connection details have been removed from this image for privacy.
 ## Install and use
 
 1. Connect VS Code to a Linux host using Remote SSH.
-2. Install **Remote SSH Version Cleaner** in that host’s Extensions section. For the 0.5.0 package (`remote-server-cleaner-0.5.0.vsix`), use **Extensions → … → Install from VSIX…** and select the package. Reload if requested.
+2. Install **Remote SSH Version Cleaner** in that host’s Extensions section. For a downloaded VSIX, use **Extensions → … → Install from VSIX…** and select the package for your publisher. Reload if requested.
 3. Click **Clean Up VS Code** in the bottom status bar.
 4. Inspect the installed servers and protection reasons. The removal total breaks down server folders, launcher files, and legacy folders; then click **Review cleanup**.
 5. Confirm the exact paths with **Delete obsolete entries**, or choose **Cancel**. After cleanup, the view shows removed paths and freshly scanned remaining installations.
@@ -38,7 +38,7 @@ No terminal commands or external runtimes are required for normal use. Cleanup o
 
 Supports Linux Stable installations in `~/.vscode-server/cli/servers/Stable-<commit>`, associated `code-<commit>` files, and matching legacy `bin/<commit>` directories. Honors `VSCODE_AGENT_FOLDER` when set. Insiders and legacy-only layouts are not supported in this first version.
 
-Keeps every commit of the highest numeric release and server folders referenced by running processes owned by this user. Running launchers and legacy server folders are protected independently; an old launcher does not protect its matching server folder. Validates installation names, product metadata, directory ancestors, and LRU schema. Unknown launcher and legacy entries are marked REVIEW and preserved. Extensions, settings, logs, and persistent data are outside the deletion scope.
+Keeps every commit of the highest numeric release and server folders referenced by running processes owned by this user. Running launchers and legacy server folders are protected independently; an old launcher does not protect its matching server folder. Validates installation names, product metadata, directory ancestors, and LRU schema. Malformed launcher names, launcher symlinks, and non-file launcher entries are marked REVIEW and preserved, as are legacy entries without a matching installed server. A regular `code-<40-character commit>` launcher is removable if it is neither for a newest installed server nor detected as running, including when its matching server is no longer installed. Extensions, settings, logs, and persistent data are outside the deletion scope.
 
 Preview changes nothing. Apply requires confirmation, rescans the plan, and checks running commits again before each deletion. Existing `lru.json` gets a timestamped backup and atomic replacement retaining protected installed versions; an absent LRU stays absent. Removal is permanent; LRU backups do not restore deleted servers. If a later deletion fails, earlier deletions are not rolled back; refresh the cleanup view.
 
