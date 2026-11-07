@@ -1,6 +1,7 @@
 /**
  * Copyright (c) 2026 Amar Micro Inc. Licensed under MIT; see LICENSE.
- * Release version: 0.5.5
+ * Designer: Jacques Amar
+ * Release version: 0.5.6
  * Last updated: 2026-11-07
  *
  * Filesystem cleanup policy for VS Code Stable servers on a Linux SSH host.
@@ -10,10 +11,14 @@
  * resource for activity before deleting it. Launchers and server folders have
  * independent protection; cleanup can stop after partial removal.
  */
+
 "use strict";
+
 const fs = require("node:fs/promises");
 const path = require("node:path");
+
 const SHA = "[a-f0-9]{40}";
+
 async function stat(p) {
   try {
     return await fs.lstat(p);
@@ -22,12 +27,14 @@ async function stat(p) {
     throw e;
   }
 }
+
 // Reject symlinks and non-directories at every validated path component.
 async function directory(p) {
   const s = await stat(p);
   if (!s?.isDirectory() || s.isSymbolicLink())
     throw new Error(`Unsafe directory: ${p}`);
 }
+
 // Read metadata only from regular files, never through a symlink.
 async function json(p) {
   const s = await stat(p);
@@ -35,6 +42,7 @@ async function json(p) {
     throw new Error(`Unsafe metadata: ${p}`);
   return JSON.parse(await fs.readFile(p, "utf8"));
 }
+
 // Compare validated major.minor.patch server versions numerically.
 function compare(a, b) {
   for (let i = 0; i < 3; i++) {
@@ -43,6 +51,7 @@ function compare(a, b) {
   }
   return 0;
 }
+
 // Extract kind:commit resource keys from process paths. An old launcher may
 // run a newer server, so launcher activity must not protect its matching folder.
 function processReferences(cmd, exe = "") {
@@ -60,6 +69,7 @@ function processReferences(cmd, exe = "") {
   }
   return refs;
 }
+
 // Inspect Linux processes on this server owned by the current account. Exited
 // processes are harmless; unreadable owned command lines abort cleanup because
 // active resources cannot be ruled out.
@@ -86,18 +96,22 @@ async function activeCommits() {
   }
   return active;
 }
+
 // Build a read-only plan from validated metadata and supplied active resource keys.
 // Unknown launcher/legacy entries remain REVIEW; LRU contains kept servers only.
 async function scan(root, active = new Set()) {
   root = path.resolve(root);
+
   // Validate every ancestor so a symlink cannot redirect cleanup outside the chosen root.
   for (let p = root; ; p = path.dirname(p)) {
     await directory(p);
     if (path.dirname(p) === p) break;
   }
+
   const servers = path.join(root, "cli", "servers");
   await directory(path.join(root, "cli"));
   await directory(servers);
+
   const installs = [];
   for (const name of await fs.readdir(servers)) {
     if (!name.startsWith("Stable-")) continue;
@@ -113,8 +127,10 @@ async function scan(root, active = new Set()) {
   }
   if (!installs.length)
     throw new Error("No supported Stable server installations found.");
+
   installs.sort((a, b) => compare(b.version, a.version));
   const newest = installs[0];
+
   // Preserve all commits tied for newest, plus installed servers whose files are in use.
   const newestCommits = new Set(
     installs
@@ -127,6 +143,7 @@ async function scan(root, active = new Set()) {
       .filter((x) => active.has(`server:${x.commit}`))
       .map((x) => x.commit),
   ]);
+
   const items = installs.map((x) => ({
     ...x,
     kind: "server",
@@ -137,6 +154,7 @@ async function scan(root, active = new Set()) {
         ? "server files in use"
         : "obsolete server",
   }));
+
   for (const name of await fs.readdir(root)) {
     if (!name.startsWith("code-")) continue;
     const p = path.join(root, name),
@@ -160,6 +178,7 @@ async function scan(root, active = new Set()) {
             : "DELETE",
     });
   }
+
   const bin = path.join(root, "bin");
   if (await stat(bin)) {
     await directory(bin);
@@ -183,6 +202,7 @@ async function scan(root, active = new Set()) {
       });
     }
   }
+
   const lru = path.join(servers, "lru.json");
   let current = null;
   if (await stat(lru)) {
@@ -195,6 +215,7 @@ async function scan(root, active = new Set()) {
     )
       throw new Error("Unrecognized lru.json format");
   }
+
   const desired = installs
     .filter((x) => keep.has(x.commit))
     .map((x) => `Stable-${x.commit}`);
@@ -209,10 +230,12 @@ async function scan(root, active = new Set()) {
     desired,
   };
 }
+
 // Compare the complete scan result so a changed preview requires fresh review.
 function signature(plan) {
   return JSON.stringify(plan);
 }
+
 // Apply only an unchanged, caller-confirmed plan. LRU replacement precedes removal;
 // per-resource checks reduce races but provide no installer lock or rollback.
 // getActive is injectable so tests can simulate activity without real processes.
@@ -222,6 +245,7 @@ async function apply(plan, getActive = activeCommits) {
     throw new Error(
       "Installations or running sessions changed. Preview again.",
     );
+
   if (
     fresh.current &&
     JSON.stringify(fresh.current) !== JSON.stringify(fresh.desired)
@@ -243,6 +267,7 @@ async function apply(plan, getActive = activeCommits) {
       await fs.rm(temp, { force: true });
     }
   }
+
   const deleted = [];
   for (const item of fresh.items.filter((x) => x.action === "DELETE")) {
     const active = await getActive();
@@ -260,4 +285,5 @@ async function apply(plan, getActive = activeCommits) {
   }
   return deleted;
 }
+
 module.exports = { scan, apply, activeCommits, processReferences, signature };
