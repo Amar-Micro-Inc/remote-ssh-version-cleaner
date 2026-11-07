@@ -14,8 +14,6 @@ If the status bar is hidden, enable **View → Appearance → Status Bar**. The 
 
 My Linux servers kept running out of disk space, and old VS Code Remote server versions were part of the problem. I started cleaning them up by hand, then wrote a Bash script to automate it. This extension brings that workflow into VS Code: review what’s installed, see what can be removed, and confirm cleanup without opening a terminal.
 
-![Amar Micro Inc.](assets/icon.png)
-
 ## Preview
 
 ![Cleanup overview showing two installed server folders and two removable entries](assets/screenshot-before-redacted.png)
