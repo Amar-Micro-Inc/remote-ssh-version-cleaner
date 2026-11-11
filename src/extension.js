@@ -1,8 +1,8 @@
 /**
  * Copyright (c) 2026 Amar Micro Inc. Licensed under MIT; see LICENSE.
  * Designer: Jacques Amar
- * Release version: 0.5.6
- * Last updated: 2026-11-07
+ * Release version: 0.5.7
+ * Last updated: 2026-11-10
  *
  * Remote SSH extension entry point and cleanup review UI.
  * A read-only startup scan updates the status button. Opening the view scans
@@ -40,6 +40,36 @@ const escape = (value) =>
         c
       ],
   );
+
+// Summarize each resource independently: running old entries do not block
+// cleanup of other obsolete entries. Review entries remain outside deletion.
+function inventorySummary(plan) {
+  const counts = (items) => [
+    ["server", "server folder"],
+    ["launcher", "launcher file"],
+    ["legacy", "legacy folder"],
+  ].map(([kind, label]) => {
+    const count = items.filter((item) => item.kind === kind).length;
+    return `${count} ${label}${count === 1 ? "" : "s"}`;
+  }).join(" · ");
+  const removable = plan.items.filter((item) => item.action === "DELETE");
+  const running = plan.items.filter((item) => item.action === "KEEP" &&
+    ["server files in use", "legacy server files in use",
+      "launcher running (does not protect matching server folder)"].includes(item.reason));
+  const review = plan.items.filter((item) => item.action === "REVIEW");
+  const messages = [removable.length
+    ? `Available to remove: ${counts(removable)}. Review and confirm cleanup.`
+    : "No entries are currently removable."];
+  if (running.length) {
+    messages.push(`Older entries protected by running processes: ${counts(running)}.`);
+    messages.push("A running process does not necessarily mean a VS Code window is connected. These entries are preserved; other removable entries can still be cleaned. Refresh after the old processes exit.");
+  }
+  if (review.length)
+    messages.push(`${review.length} unrecognized ${review.length === 1 ? "entry needs" : "entries need"} review and will be preserved.`);
+  if (!removable.length && !running.length && !review.length)
+    messages.push("Only newest entries remain.");
+  return messages.join(" ");
+}
 
 // Render the current review, confirmation, or result state with nonce-restricted
 // scripts/styles and separate server, launcher, and legacy resource lists.
@@ -252,9 +282,7 @@ function activate(context) {
     button.tooltip = error
       ? "Unable to check for obsolete entries. Click to inspect this host."
       : plan
-        ? entries.length
-          ? `Cleanup available: ${["server", "launcher", "legacy"].map((kind) => `${entries.filter((item) => item.kind === kind).length} ${kind === "server" ? "server folders" : kind === "launcher" ? "launcher files" : "legacy folders"}`).join(" · ")}. Click to review.`
-          : "No obsolete entries found. Click to inspect this host again."
+        ? `${inventorySummary(plan)} Click to inspect this host.`
         : "Checking for obsolete VS Code server entries…";
   };
 
@@ -337,11 +365,7 @@ function activate(context) {
       }
 
       await scan();
-      state.message = applying
-        ? "Cleanup complete. The lists below show what remains on this host."
-        : state.plan.items.some((x) => x.action === "DELETE")
-          ? "Review the removable entries, then confirm cleanup."
-          : "Up to date. No obsolete entries are available to remove.";
+      state.message = `${applying ? "Cleanup complete. " : ""}${inventorySummary(state.plan)}`;
     } catch (e) {
       state.plan = null;
       state.error = e.message;

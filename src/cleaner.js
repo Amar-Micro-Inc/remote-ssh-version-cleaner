@@ -1,8 +1,8 @@
 /**
  * Copyright (c) 2026 Amar Micro Inc. Licensed under MIT; see LICENSE.
  * Designer: Jacques Amar
- * Release version: 0.5.6
- * Last updated: 2026-11-07
+ * Release version: 0.5.7
+ * Last updated: 2026-11-10
  *
  * Filesystem cleanup policy for VS Code Stable servers on a Linux SSH host.
  * Scan validated installations, keep the newest release and active resources,
