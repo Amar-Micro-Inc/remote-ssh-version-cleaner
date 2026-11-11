@@ -1,10 +1,10 @@
 /**
  * Copyright (c) 2026 Amar Micro Inc. Licensed under MIT; see LICENSE.
  * Designer: Jacques Amar
- * Release version: 0.5.7
- * Last updated: 2026-11-10
+ * Release version: 0.5.8
+ * Last updated: 2026-11-11
  *
- * Remote SSH extension entry point and cleanup review UI.
+ * Local installation guidance and Remote SSH cleanup review UI.
  * A read-only startup scan updates the status button. Opening the view scans
  * again; review and explicit confirmation lead to cleaner.apply(), followed by
  * a fresh scan of remaining entries. The extension host owns cleanup and state;
@@ -255,8 +255,119 @@ ${webviewCss}
 </html>`;
 }
 
-// Register the remote-only status button, shared view state, commands, and disposables.
+// Local installs provide native VS Code deployment guidance. They never scan
+// local server directories or execute cleanup outside the Linux SSH host.
+function activateLocalSetup(context) {
+  const button = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 50);
+  button.text = "$(remote) Set Up Server Cleaner";
+  button.tooltip = "Install the cleaner on your SSH hosts using VS Code";
+  button.command = "remoteServerCleaner.clean";
+  button.show();
+  context.subscriptions.push(button);
+
+  let panel;
+  context.subscriptions.push({ dispose: () => panel?.dispose() });
+  const actions = {
+    hosts: ["workbench.view.remote"],
+    extensions: ["workbench.extensions.search", "@id:amar-micro.remote-server-cleaner"],
+    automatic: ["workbench.action.openSettings", "remote.SSH.defaultExtensions"],
+  };
+  const open = () => {
+    if (panel) {
+      panel.reveal();
+      return;
+    }
+    panel = vscode.window.createWebviewPanel(
+      "remoteServerCleaner.setup", "Set Up Server Cleaner", vscode.ViewColumn.One,
+      { enableScripts: true, localResourceRoots: [] },
+    );
+    panel.iconPath = vscode.Uri.file(path.join(__dirname, "..", "assets", "cleaner-icon.png"));
+    panel.webview.html = setupPage(context.extension.packageJSON.version);
+    const openedPanel = panel;
+    const messages = openedPanel.webview.onDidReceiveMessage(async (message) => {
+      if (!message || !Object.hasOwn(actions, message.action)) return;
+      try {
+        await vscode.commands.executeCommand(...actions[message.action]);
+      } catch (error) {
+        void vscode.window.showErrorMessage(`Unable to open setup: ${error.message}`);
+      }
+    });
+    const closed = openedPanel.onDidDispose(() => {
+      messages.dispose();
+      closed.dispose();
+      if (panel === openedPanel) panel = undefined;
+    });
+  };
+  for (const command of ["clean", "preview"])
+    context.subscriptions.push(
+      vscode.commands.registerCommand(`remoteServerCleaner.${command}`, open),
+    );
+}
+
+// Keep setup actions allowlisted in the extension host; webview messages cannot
+// supply arbitrary commands or modify settings. Deployment stays with VS Code.
+function setupPage(version) {
+  const nonce = randomBytes(18).toString("base64");
+  return `<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="Content-Security-Policy"
+      content="default-src 'none'; img-src data:; style-src 'nonce-${nonce}'; script-src 'nonce-${nonce}';">
+    <title>Set Up Server Cleaner</title>
+    <style nonce="${nonce}">
+${webviewCss}
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <div class="eyebrow">Remote SSH Version Cleaner · extension ${escape(version)}</div>
+        <h1>Set Up Server Cleaner</h1>
+        <p>Install locally once, then use VS Code to install the cleaner on each SSH host.</p>
+      </header>
+      <section>
+        <h2>Install on a host</h2>
+        <ol>
+          <li>Open Remote Explorer and connect to your Linux SSH host.</li>
+          <li>In that SSH window, open Extensions and find Remote SSH Version Cleaner by amar-micro.</li>
+          <li>Select <strong>Install in SSH: your host</strong>. Reload if requested.</li>
+          <li>Click <strong>Clean Up VS Code</strong> in that window to review and confirm cleanup.</li>
+        </ol>
+        <button data-action="hosts">Open Remote Explorer</button>
+        <button class="secondary" data-action="extensions">Find Cleaner in Extensions</button>
+        <p>Repeat for each host. Cleanup runs on the connected Linux host and account.</p>
+      </section>
+      <section>
+        <h2>Install automatically as you connect</h2>
+        <p>In your local user settings, add <code>amar-micro.remote-server-cleaner</code>
+          to <strong>Remote.SSH: Default Extensions</strong>, keeping any existing entries.</p>
+        <button class="secondary" data-action="automatic">Open Automatic Installation Settings</button>
+        <p>Remote SSH installs the Marketplace release as you connect to hosts.
+          This does not deploy to disconnected hosts or run cleanup automatically.</p>
+      </section>
+      <p>This local setup view does not inspect or delete files. Cleaning is available in Linux Remote SSH windows.</p>
+    </main>
+    <script nonce="${nonce}">
+      const vscode = acquireVsCodeApi();
+      document.querySelectorAll('button[data-action]').forEach((button) => {
+        button.addEventListener('click', () => {
+          vscode.postMessage({ action: button.dataset.action });
+        });
+      });
+    </script>
+  </body>
+</html>`;
+}
+
+// Register local setup or the remote cleanup UI according to extension-host location.
 function activate(context) {
+  if (!vscode.env.remoteName) {
+    activateLocalSetup(context);
+    return;
+  }
+
   const button = vscode.window.createStatusBarItem(
     vscode.StatusBarAlignment.Left,
     50,

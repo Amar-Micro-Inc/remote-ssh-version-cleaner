@@ -12,7 +12,7 @@ After installation, connect to a Linux host using **Remote SSH**. A **Clean Up V
 
 The button text uses your theme’s warning color when a startup scan finds removable entries. Hover to see separate counts for server folders, launcher files, and legacy folders. It returns to the normal color when none are removable; a failed check is identified in the tooltip. Opening the view, refreshing, and completing cleanup update the result. Checks never delete anything automatically. The scan summary separately counts removable entries and older entries protected by running processes. Running old entries do not block cleanup of other removable entries. A running process can remain after its VS Code window closes; refresh after it exits. Unrecognized entries are reported separately and preserved.
 
-If the status bar is hidden, enable **View → Appearance → Status Bar**. The button appears only in Linux Remote SSH windows.
+If the status bar is hidden, enable **View → Appearance → Status Bar**. Local windows show **Set Up Server Cleaner** for installation guidance. **Clean Up VS Code** appears in Linux Remote SSH windows.
 
 ## Why I built this
 
@@ -20,13 +20,15 @@ My Linux servers kept running out of disk space, and old VS Code Remote server v
 
 ## Install and use
 
-1. Connect VS Code to a Linux host using Remote SSH.
-2. Install **Remote SSH Version Cleaner** in that host’s Extensions section. Choose the Marketplace extension published by **amar-micro**. For a downloaded release, use **Extensions → … → Install from VSIX…** and select `amar-micro-remote-server-cleaner-0.5.7.vsix`. Reload if requested.
+1. Install **Remote SSH Version Cleaner** locally on your Mac, Windows or Linux computer. Click **Set Up Server Cleaner** for deployment guidance. Connect to a Linux host using Remote SSH.
+2. Install **Remote SSH Version Cleaner** in that host’s Extensions section. Choose the Marketplace extension published by **amar-micro**. For a downloaded release, use **Extensions → … → Install from VSIX…** and select `amar-micro-remote-server-cleaner-0.5.8.vsix`. Reload if requested.
 3. Click **Clean Up VS Code** in the bottom status bar.
 4. Inspect the installed servers and protection reasons. The removal total breaks down server folders, launcher files, and legacy folders; then click **Review cleanup**.
 5. Confirm the exact paths with **Delete obsolete entries**, or choose **Cancel**. After cleanup, the view shows removed paths and freshly scanned remaining installations.
 
-The button appears after startup only in Linux Remote SSH windows. If hidden, enable **View → Appearance → Status Bar**. Install the extension on each host you want to clean. A local Mac or Windows installation alone does not clean remote servers.
+The cleanup button appears after startup in Linux Remote SSH windows. If hidden, enable **View → Appearance → Status Bar**. Install the extension on each host you want to clean. A local Mac or Windows installation alone does not clean remote servers.
+
+To install the Marketplace release automatically as you connect to SSH hosts, open **Set Up Server Cleaner → Open Automatic Installation Settings** in a local window. Add `amar-micro.remote-server-cleaner` to **Remote.SSH: Default Extensions** in local user settings, preserving existing entries. VS Code handles installation when connecting; disconnected hosts are not deployed to. This does not enable automatic cleanup.
 
 No terminal commands or external runtimes are required for normal use. Cleanup operates only on the currently connected host and account; it does not enumerate SSH configurations or run automatically across hosts.
 
